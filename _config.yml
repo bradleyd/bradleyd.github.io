@@ -1,4 +1,9 @@
 name: Bradley Smith, Practicing Engineer
 markdown: kramdown
 highlighter: rouge
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+  extensions: fenced_code_blocks
 permalink: /blog/:year/:month/:day/:title
