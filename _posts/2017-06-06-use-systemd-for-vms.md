@@ -12,15 +12,20 @@ Here is service file we use to make this work
 
 ```bash
 [Unit]
-Description=Foo Guest
-After=bar-guest.target
+Description=Auth Guest
+After=rabbit-guest.service
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/virsh start foo
-ExecStop=/usr/bin/virsh stop foo
+PIDFile=/var/run/libvirt/qemu/auth.pid
+User=root
+ExecStart=/usr/bin/virsh start auth
+ExecStop=/usr/bin/virsh destroy auth
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+Here we have our auth guest which can only be started after the rabbitmq guest is up and running.  The key here is the forking type and the pid file.  We also have the guest restart always.
