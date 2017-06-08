@@ -8,3 +8,5 @@ kramdown:
   syntax_highlighter: rouge
   extensions: fenced_code_blocks
 permalink: /blog/:year/:month/:day/:title
+
+theme: jekyll-theme-cayman
