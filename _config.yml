@@ -1,6 +1,5 @@
 name: Bradley Smith, Practicing Engineer
 markdown: kramdown
-theme: jekyll-theme-cayman
 highlighter: rouge
 kramdown:
   input: GFM
