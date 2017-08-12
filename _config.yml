@@ -1,4 +1,6 @@
 name: Bradley Smith, Practicing Engineer
+title: Practicing Engineer
+description: Things I have learned along the way.
 markdown: kramdown
 highlighter: rouge
 kramdown:
@@ -7,5 +9,7 @@ kramdown:
   syntax_highlighter: rouge
   extensions: fenced_code_blocks
 permalink: /blog/:year/:month/:day/:title
-
 theme: jekyll-theme-cayman
+google_analytics: UA-104511358-1
+
+github: [metadata]
