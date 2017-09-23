@@ -8,11 +8,12 @@ date: 2017-09-22
 
 
 
-> I am going to assume you have decent knowledge of [Elixir](https://elixir-lang.org/), [Docker](https://www.docker.com/) and [Distillery](https://hexdocs.pm/distillery/getting-started.html).
+> I am going to assume you have knowledge of [Elixir](https://elixir-lang.org/), [Docker](https://www.docker.com/) and [Distillery](https://hexdocs.pm/distillery/getting-started.html) for this article.
 
 
-When combining Elixir releases and Docker, size is the name of the game.  For example, Elixir's default Docker image is around 888MB.  This does not ooze light weight efficiency.  Deploying or pulling a large Docker image takes time.
-Now, I know you are probably saying, "Use [Alpine Linux](https://alpinelinux.org/)" instead Brad.  This is a good alternative, but there are some caveats to consider.  For those who don't know, Alpine Linux is a tiny Linux distribution.  The official Alpine Docker image is around 4 MB in size.  Pretty good huh? 
+When combining Elixir releases and Docker, size is the name of the game.  For example, Elixir's default Docker image is around 888MB.  My sample application for this article is around 20MB.  Using almost a gig for 20Mb seems wasteful, no?  Deploying or pulling a large Docker image takes time.  I can see I have convinced you that this is a problem.
+
+Now, I know you are probably saying, "Use [Alpine Linux](https://alpinelinux.org/)" instead Brad.  I would respond with, "you are correct occasional reader".  For those who don't know, Alpine Linux is a tiny Linux distribution.  The official Alpine Docker image is around 4 MB in size.  Pretty good huh? 
 
 ## Begin
 
