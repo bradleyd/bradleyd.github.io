@@ -109,56 +109,70 @@ This script will build our release via our `Dockerfile.build` and then copy the 
 ```bash
 #!/bin/bash
 
-TAG=$1
+BUILD_TAG=$1
 VERSION=$2
-TEMP_NAME=foo
+TEMP_NAME=`uuidgen -t | cut -d'-' -f1`
 RELEASE_NAME=$3
+FINAL_TAG=$4
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 4 ]; then
 	echo "Illegal number of parameters"
 	echo "------Usage-----"
-	echo "./build_release.sh tag version release-name"
+	echo "./build_release.sh build-tag version release-name final-tag"
 	exit 2
 fi
 
 # build release
-docker build --no-cache -t $TAG -f Dockerfile.build --build-arg version=0.1.0 .
+echo -e "\e[33mBuilding release...\e[0m"
+docker build --no-cache -t $BUILD_TAG -f Dockerfile.build --build-arg version=$VERSION .
 # create container from image
-docker create --name $TEMP_NAME $TAG
+echo -e "\e[33mCreating temporary container...\e[0m"
+docker create --name $TEMP_NAME $BUILD_TAG
 # copy release off
+echo -e "\e[33mcopying $RELEASE_NAME from build image...\e[0m"
 docker cp $TEMP_NAME:/tmp/$RELEASE_NAME ./$RELEASE_NAME
 # remove temp container
+echo -e "\e[33mRemoving temp container...\e[0m"
 docker rm $TEMP_NAME 
+# build final image
+echo -e "\e[33mBuilding final images...\e[0m"
+docker build --no-cache -t $FINAL_TAG .
 ```
 
-As you can see, the script assumes some command line arguments will be passed in.
+As you can see, the script expects 4 command line arguments passed in.
 
 1. Docker image tag--For example, `bradleydsmith/sample-application-build`.
-2. version.
-3. release name--For example, `sample_application.tar.gz` 
+2. Application version.
+3. Release name--For example, `sample_application.tar.gz` 
+4. Final Docker tag--For example, `bradleydsmith/sample-application`
 
 I use standard Docker commands to achieve the image build, container life cycle, and artifact copying.  Please see [Docker documentation](https://docs.docker.com/) for further help.
 
-Showtime.  This is what is looks like when executing it from the command line.
+Showtime.  This is what is looks like when executing it from the command line.  I added some colors for the shell output since building a release is very chatty.
 
 ```bash
-./build_release.sh bradleydsmith/sample-application-release 0.1.0 sample_application.tar.gz
+./build_release.sh bradleydsmith/sample-application-release 0.1.0 sample_application.tar.gz bradleydsmith/sample-application
 # omitted for space
 ==> Release successfully built!
     You can run it in one of the following ways:
       Interactive: _build/prod/rel/sample_application/bin/sample_application console
       Foreground: _build/prod/rel/sample_application/bin/sample_application foreground
       Daemon: _build/prod/rel/sample_application/bin/sample_application start
- ---> 1a5a0ec862ed
-Removing intermediate container 3bbf8143aaa7
+ ---> c0c7a9312fee
+Removing intermediate container 2643b5bd5b5b
 Step 9/9 : CMD /bin/sh
- ---> Running in 52256517464b
- ---> 429e9b1c6927
-Removing intermediate container 52256517464b
-Successfully built 429e9b1c6927
+ ---> Running in ac47b9629a89
+ ---> 8e67488f6872
+Removing intermediate container ac47b9629a89
+Successfully built 8e67488f6872
 Successfully tagged backstopit/sample_application-release:latest
-0fdf4361455a0e2f671bf83451081764613f0b9a6a86fa25b7e6ead265629d21
-foo
+Creating temporary container...
+b66c7597a18ea63ba69ff720a560f72ead4bc5220bf9e11e33bde55af9fa5f31
+copying sample_application.tar.gz from build image...
+Removing temp container...
+6707d622
+Building final image...
+# omitted for space
 ```
 
 If things go well, you should have the release in the application directory and a Docker image with the tag you provided.  Let's check our handy work.
