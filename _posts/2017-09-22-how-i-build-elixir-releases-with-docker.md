@@ -1,30 +1,38 @@
 ---
 layout: post
-title: "How I do releases with Elixir and Docker"
+title: "How I do small releases with Elixir and Docker"
 date: 2017-09-22
 ---
 
 ![complicated](/images/rubenvent1.jpg)
 
 
+__This is not a ground breaking approach.  Others have discussed it before. I am jotting down my experience and examples.  Feel free to ignore it all =]__
 
-> I am going to assume you have knowledge of [Elixir](https://elixir-lang.org/), [Docker](https://www.docker.com/) and [Distillery](https://hexdocs.pm/distillery/getting-started.html) for this article.
 
 
-When combining Elixir releases and Docker, size is the name of the game.  For example, Elixir's default Docker image is around 888MB.  My sample application for this article is around 20MB.  Using almost a gig for 20Mb seems wasteful, no?  Deploying or pulling a large Docker image takes time.  I can see I have convinced you that this is a problem.
 
-Now, I know you are probably saying, "Use [Alpine Linux](https://alpinelinux.org/)" instead Brad.  I would respond with, "you are correct occasional reader".  For those who don't know, Alpine Linux is a tiny Linux distribution.  The official Alpine Docker image is around 4 MB in size.  Pretty good huh? 
+When combining Elixir releases and Docker, size is the name of the game.  For example, Elixir's default Docker image is around 888MB.  My sample application for this article is around 20MB.  Using almost a gig for 20Mb seems wasteful, no?  Deploying or pulling a large Docker image takes time.  I could babble some more, but I can see I have convinced you.
+
+Now, I know you are probably saying, "Use [Alpine Linux](https://alpinelinux.org/)" instead Brad.  For that I would say, "you are correct occasional reader".
+
+For those who don't know, Alpine Linux is a tiny Linux distribution.  The official Alpine Docker image is around 4 MB in size.  Pretty good huh? 
 
 ## Begin
 
+> I am going to assume you have knowledge of [Elixir](https://elixir-lang.org/), [Docker](https://www.docker.com/) and [Distillery](https://hexdocs.pm/distillery/getting-started.html) for this article.
+
 There are a couple of things I would like to cover in this article.
 
-* First, use Docker to build our release in the same OS environment that will be used in production (Alpine Linux)
+1. Use Docker to build our release in the same OS environment that will be used in production (Alpine Linux)
 
-* Second, use the newly created release in a minimal Docker image without all the Elixir/Erlang run time
+2. Use the newly created release in a minimal Docker image without all the Elixir/Erlang run time (small as possible)
+
+
 
 
 ## The process
+
 
 We are going to build our Elixir release on a Alpine Linux Docker image (plumbing included).  Then we will copy that release off and into a vanilla Alpine Docker image for use in production.
 
@@ -34,9 +42,9 @@ We are going to build our Elixir release on a Alpine Linux Docker image (plumbin
 > I will once again assume you have an Elixir application with Distillery all setup and good to go.  
 
 
-We will need to create 2 docker files for our two step approach--this will make more sense later on.  One file for building the release and the other file for building the final image.
+We will need to create 2 docker files for our two step approach--this will make more sense later on.  One file for building the release and the other file for building the final image.  Put these files in the root of your application.
 
-I like to call the build Dockerfile...wait for it...`Dockerfile.build`. 
+I like to call the Dockerfile used for building our release...wait for it...`Dockerfile.build`. 
 
 
 #### Dockerfile.build
@@ -65,7 +73,7 @@ RUN cd /tmp && \
 
 Here we are using [bitwalker's Alpine Linux Elixir image](https://github.com/bitwalker/alpine-elixir).  This image contains Erlang and Elixir's run time making it possible to build our release.  There are a few packages missing for our application, so I will use Alpine's package manager, `apk`, to install them.
 
-The next thing you might notice is the `ARG` keyword.  This allows us to pass the `mix version` of our application to the build process.   Please feel free to insert your own method to get the version of said application into the build.
+The next thing you might notice is the `ARG` keyword.  This allows us to pass the `mix version` of our application to the build process at Docker's build time.   Please feel free to insert your own method to get the version of said application into the build.
 
 I have used and seen: mix task's or git tags.
 
@@ -85,12 +93,12 @@ ADD config/system.config /opt/sample_application/config
 ENV RELX_REPLACE_OS_VARS true
 ENV REPLACE_OS_VARS true
 ENV MIX_ENV prod
-ENV CHECK_UPTIME_HOME /opt/sample_application
+ENV SAMPLE_APPLICATION_HOME /opt/sample_application
 
 CMD ["/opt/sample_application/bin/sample_application", "foreground"]
 ```
 
-In this `Dockerfile` we are using the stock Docker Alpine Linux image--which is what bitwalker's is based off.  I create a directory to untar our release from the build portion.  After that, I setup the configuration file and environment variables.
+In this `Dockerfile` we are using the stock Docker Alpine Linux image--which is what bitwalker's is based off.  I create a directory to untar our release from the build portion.  After that, I setup the configuration file and environment variables.  This will be application dependent.  Your mileage will vary.
 The release runs in the foreground.  This will be handy if Docker is using syslog driver for logs.
 
 ## The Glue
@@ -101,7 +109,7 @@ How do we use these two files to do this?  Glad you asked.  We will use some bas
 
 >  There are a ton of ways one could do this, but for brevity I chose to use a bash script.  
 
-This script will build our release via our `Dockerfile.build` and then copy the release to it's new home via the `Dockerfile`.
+This script will combine our docker files and output a Docker image ready for work.
 
 
 #### build_realease.sh
@@ -129,7 +137,7 @@ docker build --no-cache -t $BUILD_TAG -f Dockerfile.build --build-arg version=$V
 echo -e "\e[33mCreating temporary container...\e[0m"
 docker create --name $TEMP_NAME $BUILD_TAG
 # copy release off
-echo -e "\e[33mcopying $RELEASE_NAME from build image...\e[0m"
+echo -e "\e[33mCopying $RELEASE_NAME from build image...\e[0m"
 docker cp $TEMP_NAME:/tmp/$RELEASE_NAME ./$RELEASE_NAME
 # remove temp container
 echo -e "\e[33mRemoving temp container...\e[0m"
@@ -168,7 +176,7 @@ Successfully built 8e67488f6872
 Successfully tagged backstopit/sample_application-release:latest
 Creating temporary container...
 b66c7597a18ea63ba69ff720a560f72ead4bc5220bf9e11e33bde55af9fa5f31
-copying sample_application.tar.gz from build image...
+Copying sample_application.tar.gz from build image...
 Removing temp container...
 6707d622
 Building final image...
@@ -187,7 +195,7 @@ elixir                             latest              99275bfdda58        3 day
 
 ```
 
-Our production ready Docker image is only 50.9MB!  Deploy time should be really fast now.  If you look at our build image, it is a whopping 430MB.
+Our production ready Docker image is only 50.9MB!  Deploy and build times will be reduced.  Not only do we save time, but think about the space you can save on a Docker host.  You can run a lot of 50MB applications on a single host.
 
 
 ## Going forward
